@@ -1,6 +1,5 @@
 services:
   container1:
-    build: ./container-1
     container_name: container1
     image: "vedant2812/container1"
     ports:
