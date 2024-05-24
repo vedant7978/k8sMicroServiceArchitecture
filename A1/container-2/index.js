@@ -3,7 +3,6 @@ const path = require("path");
 const csvParser = require("csv-parser");
 const fs = require("fs");
 const dotenv = require("dotenv");
-const fileExtension = path.extname(file);
 
 
 const app = express();
@@ -44,6 +43,8 @@ app.post("/parser", (req, res) => {
 
     (async () => {
         const filePath = path.join(FILE_DIRECTORY, file);
+        const fileExtension = path.extname(file);
+
         console.log("******************");
         try {
             const isValid = await isValidCSV(filePath);
