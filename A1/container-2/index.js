@@ -3,6 +3,8 @@ const path = require("path");
 const csvParser = require("csv-parser");
 const fs = require("fs");
 const dotenv = require("dotenv");
+const fileExtension = path.extname(file);
+
 
 const app = express();
 
@@ -53,6 +55,13 @@ app.post("/parser", (req, res) => {
                         sum += Number(results[i].amount);
                     }
                 }
+                if (fileExtension === '.yml' && sum == 0) {
+                    console.log('The file is not a CSV.');
+                    return res.send({
+                        file,
+                        error: "Input file not in CSV format."
+                    });
+                }
                 res.status(200).send({ 
                     file,
                     sum
