@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: container1-deployment
+  labels:
+    app: k8-container1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8-container1
+  template:
+    metadata:
+      labels:
+        app: k8-container1
+    spec:
+      containers:
+        - name: k8-container1
+          image: vedant2812/k8-container1
+          ports:
+            - containerPort: 6000
+          env:
+            - name: PORT
+              value: "6000"
+            - name: FILE_DIRECTORY
+              value: "/vedant_PV_dir"
+            - name: CONTAINER_2_ENDPOINT
+              value: "http://container2-service:6000/parser"
+          volumeMounts:
+            - mountPath: /vedant_PV_dir
+              name: persistent-volume
+      volumes:
+        - name: persistent-volume
+          persistentVolumeClaim:
+            claimName: vedant-k8-pv-claim
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: container2-deployment
+  labels:
+    app: k8-container2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8-container2
+  template:
+    metadata:
+      labels:
+        app: k8-container2
+    spec:
+      containers:
+        - name: k8-container2
+          image: vedant2812/k8-container2
+          ports:
+            - containerPort: 2000
+          env:
+            - name: PORT
+              value: "2000"
+            - name: FILE_DIRECTORY
+              value: "/vedant_PV_dir"
+          volumeMounts:
+            - mountPath: /vedant_PV_dir
+              name: persistent-volume
+      volumes:
+        - name: persistent-volume
+          persistentVolumeClaim:
+            claimName: vedant-k8-pv-claim    
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: container2-service
+spec:
+  selector:
+    app: k8-container2
+  ports:
+    - protocol: TCP
+      port: 6000
+      targetPort: 2000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: container1-service
+spec:
+  selector:
+    app: k8-container1
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 6000
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: k8s-assignment-pv
+  labels:
+    type: CSCI-5409
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /vedant_PV_dir
+    type: DirectoryOrCreate
+  gcePersistentDisk:
+    pdName: vedant-k8-disk  # Replace with your persistent disk name
+    fsType: ext4
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vedant-k8-pv-claim
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  selector:
+    matchLabels:
+      type: CSCI-5409
+
