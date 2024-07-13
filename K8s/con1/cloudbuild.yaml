@@ -1,0 +1,49 @@
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+
+  - id: Authenticate GKE 
+    name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Step 1: obtaining cluster credentials..."
+        gcloud container clusters get-credentials k8s-vedant-container --zone us-central1-c --project ${PROJECT_ID}
+
+
+  - id: Build
+    name: "gcr.io/cloud-builders/docker"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        echo "Step 2: Building Docker image..."
+        docker build -t us-central1-docker.pkg.dev/${PROJECT_ID}/k8s-vedant/k8-container1:${SHORT_SHA} -t us-central1-docker.pkg.dev/${PROJECT_ID}/k8s-vedant/k8-container1:latest .
+        echo "Docker image built successfully."
+
+  - id: Push
+    name: "gcr.io/cloud-builders/docker"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        echo "Step 3: Pushing Docker image..."
+        docker push --all-tags us-central1-docker.pkg.dev/${PROJECT_ID}/k8s-vedant/k8-container1
+        echo "Image pushed successfully."
+
+  - id: Update GKE
+    name: "gcr.io/cloud-builders/kubectl"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        echo "Step 4: Updating pod by setting new image and applying deployment after checking if pod is exists....."
+        echo "${PROJECT_ID}"
+        kubectl get deployment container1-deployment || kubectl apply -f deployment-container1.yaml
+        kubectl set image deployment/container1-deployment k8s-container1=us-central1-docker.pkg.dev/${PROJECT_ID}/k8s-vedant/k8-container1:${SHORT_SHA}
+        echo "Image updated successfully."
+    env:
+      - 'CLOUDSDK_COMPUTE_REGION=us-central1-c'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=k8s-vedant-container'
